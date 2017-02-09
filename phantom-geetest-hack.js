@@ -8,13 +8,19 @@ page.onConsoleMessage = function(msg) {
 var gt = null, challenge = null;
 page.onResourceReceived = function(response) {
   if (!gt) {
-    var str = JSON.stringify(response);
+
+    var str = response.url;
+    if (str.indexOf('gt') == -1)
+      return
+
+    console.log('aa', str, str.substring(0, str.indexOf('&callback')))
     // console.log('Response (#' + response.id + ', stage "' + response.stage + '"): ' + JSON.stringify(response));
-    var res = str.match(/gt=(.*)&challenge=(.*)&/);
+    var res = str.match(/gt=([^&]*)&challenge=([^&]*)&/);
     console.log('match gt', res);
     if (res && res[1]) {
       gt = res[1].trim();
-      console.log('gt=', gt);
+      challenge = res[2].trim()
+      console.log('gt='+res[1], 'challenge='+challenge);
       //jsonp
       page.evaluate(function(url) {
         console.log('get url', url);
@@ -32,22 +38,23 @@ page.onResourceReceived = function(response) {
         //     console.log('jsonp error', err);
         //   }
         // });
-        window.handler = function(data) {
-          console.log('get jsonp return: ',JSON.stringify(data));
+        window.myGeeHandler = function(data) {
+          console.log('get jsonp return-----------------------: ',JSON.stringify(data));
         };
         // 提供jsonp服务的url地址（不管是什么类型的地址，最终生成的返回值都是一段javascript代码）
-        var urll = 'http://api.geetest.com/get.php?'+url+'&callback=handler';
+        var urll = url+'&callback=myGeeHandler';
         // 创建script标签，设置其属性
         var script = document.createElement('script');
         script.setAttribute('src', urll);
         // 把script标签加入head，此时调用开始
         document.getElementsByTagName('head')[0].appendChild(script);
-      }, res[0].slice(0, -1));
+      }, str.substring(0, str.indexOf('&callback')));
     }
   }
 };
 
-page.open('http://www.guahao.com/register/mobile', function(status) {
+//page.open('http://www.guahao.com/register/mobile', function(status) {
+page.open('https://aso100.com/error/ipLImit', function(status) {
   if (status !== 'success') {
     console.log('get page fail');
     phantom.exit();
@@ -60,6 +67,7 @@ page.open('http://www.guahao.com/register/mobile', function(status) {
       var bg = document.querySelectorAll('div.gt_cut_bg_slice')[0];
       var bgUrl = bg.style['backgroundImage'];
       bgUrl = bgUrl.slice(4, -1);
+      console.log('bgUrl', bgUrl)
       // create canvas, draw image to be detected
       var canvas = document.createElement('canvas');
       canvas.id = 'my-canvas';
@@ -139,7 +147,7 @@ page.open('http://www.guahao.com/register/mobile', function(status) {
 
         }
         // draw canvas on document
-        document.querySelector('div.tab-main.g-clear.J_TabMain').appendChild(canvas);
+        document.querySelector('.ip-limit').appendChild(canvas);
       };
 
       imageObj.crossOrigin = 'Anonymous';
@@ -299,7 +307,7 @@ page.open('http://www.guahao.com/register/mobile', function(status) {
                 userresponse: aa._(offset.x - 6, challenge),
                 a: ma.Z(a.id)
               };
-              var url = 'http://api.geetest.com/ajax.php?';
+              var url = 'https://api.geetest.com/ajax.php?';
 
               for (var key in postData) {
                 url += [key, postData[key]].join('=') + '&';
@@ -330,39 +338,39 @@ page.open('http://www.guahao.com/register/mobile', function(status) {
 
       }, gt, challenge);
       if (!pos) {
-        console.error('cannnot detect');
+        console.error('cannot detect');
         page.render('web/fail-' + Date.now() + '.png');
         phantom.exit();
       }
       console.log('get pos', pos.x, pos.y);
 
-      // page.sendEvent('mousemove', 215, 148);
-      // page.sendEvent('mousedown', 215, 148);
+      page.sendEvent('mousemove', 215, 148);
+      page.sendEvent('mousedown', 215, 148);
 
-      // var i;
-      // for (i = 0; i < (pos.x - 6); i++) {
-      //   (function(c) {
-      //     setTimeout(function() {
-      //       page.sendEvent('mousemove', 215 + c, 148);
-      //       // console.log('i: ', 'po', c);
-      //       // page.render('mouse-moved-'+c+'-' + '.png');
-      //     }, 17 * c);
-      //   })(i);
-      // }
-      // setTimeout(function() {
-      //   // page.sendEvent('mousemove', 215 + pos.x-6, 148);
-      //   page.render('mouse-moved-last-' + '.png');
-      //   setTimeout(function() {
-      //     page.sendEvent('mouseup', 215 + pos.y - 6, 148);
-      //     page.render('mouse-up-' + '.png');
-      //   }, 30);
-      //   setTimeout(function() {
-      //     page.render('mouse-over-' + '.png');
-      //     page.sendEvent('click', 215, 178);
-      //     page.render('next-' + '.png');
-      //     phantom.exit();
-      //   }, 300);
-      // }, 17 * (i + 2));
+      var i;
+      for (i = 0; i < (pos.x - 6); i++) {
+        (function(c) {
+          setTimeout(function() {
+            page.sendEvent('mousemove', 215 + c, 148);
+            // console.log('i: ', 'po', c);
+            // page.render('mouse-moved-'+c+'-' + '.png');
+          }, 17 * c);
+        })(i);
+      }
+      setTimeout(function() {
+        // page.sendEvent('mousemove', 215 + pos.x-6, 148);
+        page.render('mouse-moved-last-' + '.png');
+        setTimeout(function() {
+          page.sendEvent('mouseup', 215 + pos.y - 6, 148);
+          page.render('mouse-up-' + '.png');
+        }, 30);
+        setTimeout(function() {
+          page.render('mouse-over-' + '.png');
+          page.sendEvent('click', 215, 178);
+          page.render('next-' + '.png');
+          phantom.exit();
+        }, 300);
+      }, 17 * (i + 2));
     }, 2000);
 
   }, 4000);
